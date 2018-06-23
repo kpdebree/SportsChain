@@ -1,0 +1,72 @@
+// List of sports
+SPORTS: {
+	1: "pingpong"
+}
+
+// List of Locations
+REDPINGPONGTABLE: {
+	name: REDPINGPONTABLE,
+  lat: 3.405234,
+	lng: 4.234234,
+  sport: 1,
+  ref: lastblock
+}
+
+// List of Players
+KEVIN: {
+	name: Kevin,
+  ELO: 1600,
+  NUMGAMES: 0,
+  ref: lastblock
+}
+LUIGI: {
+  name: Luigi,
+  ELO: 1600,
+  NUMGAMES: 0,
+  ref: lastblock
+}
+PATRICK: {
+  name: Patrick,
+  ELO: 1600,
+  NUMGAMES: 0,
+  ref: lastblock
+}
+
+
+// Player checks into location
+// Founding block
+
+block: {
+	REDPINGPONGTABLE, PATRICK
+  action: joined
+}
+
+// Another player joins
+
+block: {
+  REDPINGPONGTABLE, PATRICK, KEVIN
+  action: started
+}
+
+// One player wins
+
+block: {
+  REDPINGPONGTABLE, PATRICK, KEVIN
+  action: ended,
+  winner: patrick,
+  numgames: numgames + 1,
+  elo: elo algo
+}
+
+// Another player reports
+
+block: {
+  REDPINGPONGTABLE, PATRICK, KEVIN
+  action: ended,
+  winner: kevin,
+  numgames: numgames + 1,
+  elo: elo algo
+}
+
+// cases
+// reject if last block is taken
