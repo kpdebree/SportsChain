@@ -1,0 +1,22 @@
+{
+  "name": "sportschain",
+  "version": "1.0.0",
+  "description": "Blockchain Interface for Competitive Physical Activity",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kpdebree/SportsChain.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kpdebree/SportsChain/issues"
+  },
+  "homepage": "https://github.com/kpdebree/SportsChain#readme",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
