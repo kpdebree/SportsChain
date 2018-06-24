@@ -1,8 +1,10 @@
-import fetch from '/lib/fetch';
+const { fetch } = require('./lib/fetch');
+const { upload } = require('./lib/upload');
 const express = require('express');
-const app = express();
+const pug = require('pug');
 var fs = require('fs');
 
+const app = express();
 app.set('view engine', 'pug');
 const PORT = 3000;
 
