@@ -1,0 +1,21 @@
+html
+    body
+        p= data
+        form(action='/startgame', method='POST')
+            p
+            | player: 
+            input(type='text', name='player', value='')
+            | location:
+            input(type='text', name='location', value='')
+            input(type='submit', value='Submit')
+        form(action='/endgame', method='POST')
+            p
+            | player: 
+            input(type='text', name='player', value='')
+            | location:
+            input(type='text', name='location', value='')
+            | prevBlock: 
+            input(type='text', name='prevBlock', value='')
+            | WinOrLose: 
+            input(type='text', name='WinOrLose', value='')
+            input(type='submit', value='Submit')

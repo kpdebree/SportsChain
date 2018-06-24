@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+app.set('view engine', 'pug');
 const PORT = 3000;
 
 var locations = {
@@ -10,6 +11,13 @@ var people = {
 	Patrick: null,
 	Kevin: null
 };
+
+app.get('/', (req, res) => {
+	let response = JSON.stringify(locations);
+	response += '\n';
+	response += JSON.stringify(people);
+	res.render('index', { data: response });
+})
 
 // Starting a game
 app.post('/startgame', (req, res) => {
@@ -44,6 +52,7 @@ app.post('/startgame', (req, res) => {
 	// Upload Location and Player into IPFS
 	// Set Location reference to the returned Tx
 	// Set Player reference to the returned Tx
+	res.render('index', { data: response });
 });
 
 // Ending a game
@@ -80,6 +89,7 @@ app.post('/endgame', (req, res) => {
 		// Set Location reference to the return Tx
 		// Set Player reference to the return Tx
 	}
+	res.render('index', { data: response });
 });
 
-app.listen(PORT, () => console.log(`Sportschain app listening on port ${PORT}`);
+app.listen(PORT, () => console.log(`Sportschain app listening on port ${PORT}`));
