@@ -1,10 +1,9 @@
 {
   "name": "sportschain",
-  "version": "0.0.1",
-  "description": "A decentralized Blockchain application",
+  "version": "1.0.0",
+  "description": "Blockchain Interface for Competitive Physical Activity",
   "main": "index.js",
   "scripts": {
-    "start": "next",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,5 +22,6 @@
     "next": "^6.0.3",
     "react": "^16.4.1",
     "react-dom": "^16.4.1"
+    "pug": "^2.0.3"
   }
 }
