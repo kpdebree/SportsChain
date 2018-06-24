@@ -1,3 +1,7 @@
+import Page from '../components/page'
+
 export default () => (
-  <h1>SportsChain</h1>
+  <Page>
+    <h1>SportsChain</h1>
+  </Page>
 )
