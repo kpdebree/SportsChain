@@ -23,10 +23,9 @@ app.get('/', (req, res) => {
 
 // Starting a game
 app.get('/startgame', (req, res) => {
-	locationReference = req.query.location;
-	playerReference = req.query.player;
-	var LOCATION;
-	var PLAYER;
+	const locationReference = req.query.location;
+	const playerReference = req.query.player;
+	let LOCATION;
 	/**
 	* Will check if there are any null references, and if so generate initial ones. Or else fetch those references
 	**/
@@ -43,15 +42,13 @@ app.get('/startgame', (req, res) => {
 			if (err) throw err;
 			console.log("Saved a new player file");
 		});
-		// Push a new block with ELO = 1600, NumGames = 0, Reports = 0
-		// Set people dictionary reference to this new blokc
-	} else {
-		PLAYER = fetch(people[playerReference]);
+		let hash = upload('tx.json');
+		people[playerReference] = hash;
 	}
 	/**
 	* Check the state of the location to determine what action to take
 	**/
-	if (LOCATION.status === "gaming") {
+	if (LOCATION.status === "gaming" || LOCATION.status === "endgame") {
 		// If the block is a GAME block, send back a rejection
 		res.send("Rejection. A game is already being played.")
 	} else if (LOCATION.status === "done" || LOCATION.status === "open") {
@@ -86,39 +83,83 @@ app.get('/startgame', (req, res) => {
 
 // Ending a game
 app.get('/endgame', (req, res) => {
-	location = req.query.location;
-	winner = req.query.winner;
-	blockReference = req.query.blockReference;
-  	playerReference = req.query.playerReference;
-	// Check the case by seeing if location references matches the player's block reference
-	/**
-		* CASE 1 : First player to report
-		**/
-	// Upload result, player, and block to IPFS
-	// Update Location reference
-	// Update Player reference
-	/**
-		* CASE 2: Second player to report
-		**/
-	// Do the players disagree?
-  if (winner !== blockReference.winner) {
-    // Generate block with DONE tag
-		// playerReference reports++
-		// blockReference.playerReference.reports++
-		// Set Location reference to the returned Tx
-		// Set Player reference to the return Tx
+	const location = req.query.location;
+	const winner = req.query.winner;
+	const blockReference = req.query.blockReference;
+  	const playerReference = req.query.playerReference;
+	let LOCATION = fetch(locations[locationReference]);
+	let BLOCK = fetch(locations[blockReference]);
+	// let PLAYER = fetch(people[playerReference]);
+	if (LOCATION.status === "gaming") {
+		/** CASE 1: First player to report */
+		// Upload result, player, and block to IPFS
+		fs.writeFile('tx.json', 
+			`{prevBlock:${blockReference}, player: ${playerReference}, winner: ${winner}, status: endgame}`, 
+			function(err, file) {
+				if (err) throw err;
+				console.log("Saved a new player file");
+			});
+		let hash = upload('tx.json');
+		people[playerReference] = hash;
+		location[locationReference] = hash;
+	} else if (LOCATION.status === "endgame") {
+		/** CASE 2: Second player to report */
+		// Do the players disagree?
+		if (winner !== BLOCK.winner) {
+			// playerReference reports++
+			let playerOneReports = BLOCK.playerOneReports + 1;
+			// blockReference.playerReference.reports++
+			let playerTwoReports = BLOCK.playerTwoReports + 1;
+			// Generate block with DONE tag and upload to IPFS
+			fs.writeFile('tx.json', 
+			`{prevBlock:${blockReference}, player: ${playerReference}, winner: ${winner}, status: DONE, playerOneReports: ${playerOneReports}, playerTwoReports: ${playerTwoReports}}`, 
+			function(err, file) {
+				if (err) throw err;
+				console.log("Saved a new player file");
+			});
+			let hash = upload('tx.json');
+			location[locationReference] = hash;
+			people[playerReference] = hash;
+			people[BLOCK.playerReference] = hash;
+		}
+		// Do the players agree?
+		else {
+			// players adjust number of games
+			let playerOneGames = BLOCK.playerOneGames + 1;
+			let playerTwoGames = BLOCK.playerTwoGames + 1;
+			// players adjust ELO
+			let p1ELO = BLOCK.playerOneElo;
+ 			let p2ELO = BLOCK.playerTwoElo;
+ 			let Delta1 = (1 / (1 + Math.pow(10, ((p1ELO - p2ELO) / 400))));
+ 			let Delta2 = (1 / (1 + Math.pow(10, ((p2ELO - p1ELO) / 400))));
+ 			if (result === 'win') {
+				playerOneNewElo = Math.floor(p1ELO + 30 * (1 - Delta1));
+				playerTwoNewElo = Math.floor(p2ELO + 30 * (0 - Delta2));;
+ 			} else {
+				playerTwoNewElo = Math.floor(p2ELO + 30 * (1 - Delta2));;
+				playerOneNewElo = Math.floor(p1ELO + 30 * (0 - Delta1));
+ 			}
+			// Generate block with DONE tag and upload to IPFS
+			fs.writeFile('tx.json', 
+			`{prevBlock:${blockReference}, player: ${playerReference}, 
+			winner: ${winner}, status: DONE, 
+			playerOneGames: ${playerOneReports}, 
+			playerTwoGames: ${playerTwoReports},
+			playerOneElo: ${playerOneNewElo}, 
+			playerTwoElo: ${playerTwoNewElo},
+			}`, 
+			function(err, file) {
+				if (err) throw err;
+				console.log("Saved a new player file");
+			});
+			let hash = upload('tx.json');
+			location[locationReference] = hash;
+			people[playerReference] = hash;
+			people[BLOCK.playerReference] = hash;
+		}
+	} else {
+		res.send("You cannot end a game that does not exist");
 	}
-  // Do the players agree?
-  else {
-		// Generate block with DONE tag
-		// playerReference num_games++
-		// blockReference.playerReference num_games++
-		// calculate ELO for playerReference
-		// calculate ELO for blockReference.playerReference
-		// Set Location reference to the return Tx
-		// Set Player reference to the return Tx
-	}
-	res.render('index', { data: response });
 });
 
 app.listen(PORT, () => console.log(`Sportschain app listening on port ${PORT}`));
