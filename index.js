@@ -1,12 +1,13 @@
+import fetch from '/lib/fetch';
 const express = require('express');
 const app = express();
-import fetch from '/lib/fetch';
 var fs = require('fs');
+
 app.set('view engine', 'pug');
 const PORT = 3000;
 
 var locations = {
-	PingPongTable: 'QmTQqczEPUzyaArjSzpLqH2EGQ2y8Mzc3AY9wR5u1XsgjL'
+	PingPongTable: 'QmSkMXitFZstW9HsJsownnRGGQWRRBHsm1qDb8QzB4j8Ty'
 };
 var people = {
 	Luigi: null,

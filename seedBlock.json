@@ -1,0 +1,6 @@
+{
+	status: open,
+	location: PingPongTable,
+	player1: null,
+	player2: null
+}
