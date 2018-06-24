@@ -1,0 +1,10 @@
+{
+  "prevHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "sport": "ping-pong",
+  "player1": "Kevin",
+  "player1Elo": "1600",
+  "player2": "Patrick",
+  "player2Elo": "1600",
+  "locationLat": "34.0522",
+  "locationLong": "-118.2437"
+}
