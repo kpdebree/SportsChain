@@ -1,14 +1,14 @@
 html
     body
         p= data
-        form(action='/startgame', method='POST')
+        form(action='/startgame', method='GET')
             p
             | player: 
             input(type='text', name='player', value='')
             | location:
             input(type='text', name='location', value='')
             input(type='submit', value='Submit')
-        form(action='/endgame', method='POST')
+        form(action='/endgame', method='GET')
             p
             | player: 
             input(type='text', name='player', value='')

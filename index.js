@@ -1,10 +1,15 @@
+const { fetch } = require('./lib/fetch');
+const { upload } = require('./lib/upload');
 const express = require('express');
+const pug = require('pug');
+var fs = require('fs');
+
 const app = express();
 app.set('view engine', 'pug');
 const PORT = 3000;
 
 var locations = {
-	PingPongTable: null
+	PingPongTable: 'QmSkMXitFZstW9HsJsownnRGGQWRRBHsm1qDb8QzB4j8Ty'
 };
 var people = {
 	Luigi: null,
@@ -19,77 +24,144 @@ app.get('/', (req, res) => {
 	res.render('index', { data: response });
 })
 
+function generateBlock(
+	status,
+	location=null,
+	player1=null,
+	player2=null,
+	winner=null
+) {
+	// you can trade STORAGE for COMPUTE by saving a hash of the previous block
+	return `{
+	status: ${status},
+	location: ${location},	
+	player1: ${player1},	
+	player2: ${player2},	
+	winner: ${winner}
+	}`
+	// player : { name, elo, numGames, reports}
+}
+
+app.get('/getinfo', (req, res) => {
+	const playerReference = req.query.player;
+	if (Object.keys(people).indexOf(playerReference) === -1) { // For a new account
+		let player = {
+			name: playerReference,
+			elo: 1600,
+			numGames: 0,
+			reports: 0
+		}
+		res.send(JSON.stringify(player));
+	} else { // Otherwise return account info from reference to most recent block
+		let block = fetch(people[playerReference]);
+		let player = (block.player1.name === playerReference) ? block.player1 : block.player2 ;
+		res.send(JSON.stringify(player));
+	}
+});
+
 // Starting a game
-app.post('/startgame', (req, res) => {
-	locationReference = req.params.location;
-	playerReference = req.params.player;
+app.get('/startgame', (req, res) => {
+	const locationReference = req.query.location;
+	const playerReference = req.query.player;
+	// For now we hardcode in our only location seed block. But there should be a method for generating one in the future
+	let BLOCK = fetch(locations[locationReference]);
 	/**
-		* Will check if there are any null references, and if so generate initial ones
-		**/
-	if (locations[locationReference] === null) {
-		// There should be a method for adding a new location
+	* Check the state of BLOCK, aka game or location, to determine what action to take
+	**/
+	if (BLOCK.status === "gaming" || BLOCK.status === "endgame") {
+		res.send("Rejection. A game is already being played.")
+	} else if (BLOCK.status === "done" || BLOCK.status === "open") {
+		fs.writeFile('tx.json', 
+			generateBlock("waiting", location[locationReference], locationReference, playerReference),
+			function(err, file) {
+				if (err) throw err;
+				console.log("Created a new waiting game");
+			}
+		);
+		let hash = upload('tx.json');
+		people[playerReference] = hash;
+		location[locationReference] = hash;
+		res.send("Open location. Starting a new game.")
+	} else if (BLOCK.status === "waiting") {
+		// If there is another player in this location, we want to append our info and start the game
+		fs.writeFile('tx.json', 
+			generateBlock("gaming", location[locationReference], locationReference, LOCATION.player1, playerReference),
+			function(err, file) {
+				if (err) throw err;
+				console.log("Started a new game");
+			}
+		);
+		let hash = upload('tx.json');
+		people[playerReference] = hash;
+		people[BLOCK.player1] = hash;
+		location[locationReference] = hash;
+		res.send("You have joined a game with the other player. Enjoy!")
 	}
-	if (people[playerReference] === null) {
-		// Push a new block with ELO = 1600, NumGames = 0, Reports = 0
-		// Set people dictionary reference to this new blokc
-	}
-	/**
-		* Check if there is already a game going on in this location
-		**/
-  // If the block is a GAME block, send back a rejection
-	/**
-		* Check if the location is available, to start a new game
-		**/
-	// If the block is a DONE block, this is a new game so start it
-	// Upload Location and Reference to Last Block into IPFS
-	// Set Location reference to the returned Tx
-	// Set Player reference to the returned Tx
-	// Set Other Player reference to the returned Tx
-	/**
-		* Check if the location is waiting for another player,  
-		**/
-	// If there is not a player in this location, do this
-	// Upload Location and Player into IPFS
-	// Set Location reference to the returned Tx
-	// Set Player reference to the returned Tx
-	res.render('index', { data: response });
 });
 
 // Ending a game
-app.post('/endgame', (req, res) => {
-	location = req.params.location;
-	winner = req.params.winner;
-	blockReference = req.params.blockReference;
-  playerReference = req.params.playerReference;
-	// Check the case by seeing if location references matches the player's block reference
-	/**
-		* CASE 1 : First player to report
-		**/
-	// Upload result, player, and block to IPFS
-	// Update Location reference
-	// Update Player reference
-	/**
-		* CASE 2: Second player to report
-		**/
-	// Do the players disagree?
-  if (winner !== blockReference.winner) {
-    // Generate block with DONE tag
-		// playerReference reports++
-		// blockReference.playerReference.reports++
-		// Set Location reference to the returned Tx
-		// Set Player reference to the return Tx
+app.get('/endgame', (req, res) => {
+	const location = req.query.location;
+	const winner = req.query.winner;
+  	const playerReference = req.query.player;
+	let BLOCK = fetch(locations[locationReference]);
+	if (BLOCK.status === "gaming") {
+		/** CASE 1: First player to report */
+		fs.writeFile('tx.json', 
+			generateBlock("endgame", location[locationReference], locationReference, BLOCK.player1, BLOCK.player2, winner),
+			function(err, file) {
+				if (err) throw err;
+				console.log("Saved a new player file");
+			}
+		);
+		let hash = upload('tx.json');
+		people[playerReference] = hash;
+		location[locationReference] = hash;
+	} else if (BLOCK.status === "endgame") {
+		/** CASE 2: Second player to report */
+		if (winner !== BLOCK.winner) { // If there is disagreement among players
+			let newPlayer1 = {...BLOCK.player1, reports: BLOCK.player1.reports + 1};
+			let newPlayer2 = {...BLOCK.player2, reports: BLOCK.player2.reports + 1};
+			fs.writeFile('tx.json', 
+				generateBlock("done", location[locationReference], locationReference, newPlayer1, newPlayer2),				
+				function(err, file) {
+					if (err) throw err;
+					console.log("Saved a new player file");
+				}
+			);
+			let hash = upload('tx.json');
+			location[locationReference] = hash;
+			people[playerReference] = hash;
+			people[BLOCK.playerReference] = hash;
+		} else { // If there is agreement among players
+			let p1ELO = BLOCK.player1.elo;
+ 			let p2ELO = BLOCK.player2.elo;
+ 			let Delta1 = (1 / (1 + Math.pow(10, ((p1ELO - p2ELO) / 400))));
+ 			let Delta2 = (1 / (1 + Math.pow(10, ((p2ELO - p1ELO) / 400))));
+ 			if (result === 'player1') {
+				elo1 = Math.floor(p1ELO + 30 * (1 - Delta1));
+				elo2 = Math.floor(p2ELO + 30 * (0 - Delta2));
+ 			} else {
+				elo2 = Math.floor(p2ELO + 30 * (1 - Delta2));
+				elo1 = Math.floor(p1ELO + 30 * (0 - Delta1));
+ 			}
+			let newPlayer1 = {...BLOCK.player1, elo:elo1, numGames: BLOCK.player1.numGames + 1};
+			let newPlayer2 = {...BLOCK.player2, elo:elo2, numGames: BLOCK.player2.numGames + 1};
+			fs.writeFile('tx.json', 
+				generateBlock("done", location[locationReference], locationReference, newPlayer1, newPlayer2),				
+				function(err, file) {
+					if (err) throw err;
+					console.log("Saved a new player file");
+				}
+			);
+			let hash = upload('tx.json');
+			location[locationReference] = hash;
+			people[playerReference] = hash;
+			people[BLOCK.playerReference] = hash;
+		}
+	} else {
+		res.send("You cannot end a game that does not exist");
 	}
-  // Do the players agree?
-  else {
-		// Generate block with DONE tag
-		// playerReference num_games++
-		// blockReference.playerReference num_games++
-		// calculate ELO for playerReference
-		// calculate ELO for blockReference.playerReference
-		// Set Location reference to the return Tx
-		// Set Player reference to the return Tx
-	}
-	res.render('index', { data: response });
 });
 
 app.listen(PORT, () => console.log(`Sportschain app listening on port ${PORT}`));
